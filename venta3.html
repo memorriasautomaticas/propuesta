@@ -1,0 +1,1353 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PRAGMA | Arquitectos – Dashboard Interactivo (Fase 1)</title>
+
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🅿️</text></svg>">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Anime.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+
+  <style>
+    :root{
+      --fuchsia: #c026d3;
+      --violet-700: #6d28d9;
+      --slate-50: #f8fafc;
+      --slate-100:#f1f5f9;
+      --slate-200:#e2e8f0;
+      --slate-600:#475569;
+      --green-600:#16a34a;
+      --red-600:#dc2626;
+      --blue-600:#2563eb;
+    }
+    *{box-sizing:border-box}
+    body{font-family:'Inter',sans-serif;background:var(--slate-50)}
+    .sidebar-item{transition:all .2s ease-in-out;font-weight:500}
+    .sidebar-item:not(.active):hover{transform:translateX(5px);filter:brightness(95%)}
+    .sidebar-item.active{font-weight:700;box-shadow:3px 0 0 0 inset}
+    .card{
+      background:#fff;border-radius:1rem;border:1px solid var(--slate-200);
+      transition:transform .3s ease, box-shadow .3s ease;
+      box-shadow:0 4px 6px -1px rgb(0 0 0 / .04), 0 2px 4px -2px rgb(0 0 0 / .03)
+    }
+    .card-hover:hover{transform:translateY(-8px);box-shadow:0 20px 25px -5px rgb(0 0 0 / .08), 0 8px 10px -6px rgb(0 0 0 / .04)}
+    main section{display:none}
+    main section.active{display:block}
+    .animated-content>*{opacity:0}
+    .keyword-highlight{font-weight:700;color:var(--fuchsia)}
+    .clickable-pulse{animation:pulse-effect 2.5s infinite;cursor:pointer}
+    @keyframes pulse-effect{
+      0%{box-shadow:0 0 0 0 rgba(192, 38, 211, .5)}
+      70%{box-shadow:0 0 0 10px rgba(192, 38, 211, 0)}
+      100%{box-shadow:0 0 0 0 rgba(192, 38, 211, 0)}
+    }
+    /* Acordeón FAQ */
+    .faq-details{max-height:0;overflow:hidden;transition:max-height .5s cubic-bezier(.25,1,.5,1)}
+    .faq-card.open .faq-details{max-height:500px}
+    .faq-card.open .faq-arrow{transform:rotate(90deg)}
+    .faq-arrow{transition:transform .3s ease}
+    /* Modal */
+    .modal{transition:opacity .3s ease}
+    .modal-panel{transition:transform .3s ease, opacity .3s ease}
+    /* Timeline clickable */
+    .timeline-item{transition:background-color .3s ease;cursor:pointer}
+    .timeline-item:hover{background:#fcf4ff}
+    /* Chips */
+    .info-badge{
+      display:inline-flex;align-items:center;gap:.4rem;font-size:.75rem;font-weight:600;
+      color:#6b21a8;background:#f5d0fe;border:1px solid #f0abfc;border-radius:999px;padding:.25rem .6rem
+    }
+    .stat-chip{white-space:nowrap}
+    .table-scroll{overflow:auto}
+    .tag{font-size:.70rem;padding:.15rem .4rem;border-radius:.4rem}
+
+    /* Tooltips simples */
+    .tooltip {
+      position: fixed;
+      z-index: 40;
+      pointer-events: none;
+    }
+
+    /* Acordeón ventas */
+    .sales-details{max-height:0;overflow:hidden;transition:max-height .4s ease}
+    .sales-card.open .sales-details{max-height:800px}
+
+    /* Ayuda de campo */
+    .field-help{display:none}
+    .field-help.show{display:block}
+  </style>
+</head>
+<body class="text-gray-900 antialiased">
+
+  <div class="flex h-screen bg-slate-50">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-white/95 backdrop-blur-lg border-r border-gray-200 text-gray-800 flex-col fixed h-full z-20 hidden md:flex">
+      <div class="h-20 flex items-center justify-center border-b border-gray-200">
+        <h1 class="text-3xl font-extrabold tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-amber-400 via-orange-500 to-violet-600">PRAGMA</h1>
+      </div>
+      <nav id="sidebar-nav" class="flex-1 px-3 py-4 overflow-y-auto">
+        <ul class="space-y-2">
+          <li><a href="#inicio" data-section="inicio" class="sidebar-item flex items-center p-3 rounded-lg"><span class="w-5 h-5 mr-3">🏠</span><span>Inicio</span></a></li>
+          <li><a href="#como-funciona" data-section="como-funciona" class="sidebar-item flex items-center p-3 rounded-lg"><span class="w-5 h-5 mr-3">⚙️</span><span>Cómo funciona</span></a></li>
+          <li><a href="#ahorro" data-section="ahorro" class="sidebar-item flex items-center p-3 rounded-lg"><span class="w-5 h-5 mr-3">🧮</span><span>Calcula tu ahorro</span></a></li>
+          <li><a href="#precios" data-section="precios" class="sidebar-item flex items-center p-3 rounded-lg"><span class="w-5 h-5 mr-3">💳</span><span>Planes y precios</span></a></li>
+          <li><a href="#casos" data-section="casos" class="sidebar-item flex items-center p-3 rounded-lg"><span class="w-5 h-5 mr-3">📊</span><span>Casos y ejemplos</span></a></li>
+          <li><a href="#roadmap" data-section="roadmap" class="sidebar-item flex items-center p-3 rounded-lg"><span class="w-5 h-5 mr-3">🗺️</span><span>Roadmap (Fase 1→)</span></a></li>
+          <li><a href="#integraciones" data-section="integraciones" class="sidebar-item flex items-center p-3 rounded-lg"><span class="w-5 h-5 mr-3">🔗</span><span>Integraciones y seguridad</span></a></li>
+          <li><a href="#faq" data-section="faq" class="sidebar-item flex items-center p-3 rounded-lg"><span class="w-5 h-5 mr-3">❓</span><span>FAQ</span></a></li>
+          <li><a href="#contacto" data-section="contacto" class="sidebar-item flex items-center p-3 rounded-lg"><span class="w-5 h-5 mr-3">✉️</span><span>Contacto</span></a></li>
+        </ul>
+      </nav>
+    </aside>
+
+    <!-- Main -->
+    <main class="ml-0 md:ml-64 flex-1 overflow-y-auto p-4 sm:p-8 lg:p-12">
+      <section id="inicio"></section>
+      <section id="como-funciona"></section>
+      <section id="ahorro"></section>
+      <section id="precios"></section>
+      <section id="casos"></section>
+      <section id="roadmap"></section>
+      <section id="integraciones"></section>
+      <section id="faq"></section>
+      <section id="contacto"></section>
+    </main>
+  </div>
+
+  <!-- Modal reutilizable -->
+  <div id="generic-modal" class="modal fixed inset-0 z-30 hidden items-center justify-center p-4">
+    <div id="generic-modal-overlay" class="absolute inset-0 bg-black/50"></div>
+    <div id="generic-modal-panel" class="modal-panel relative card w-full max-w-xl transform opacity-0 scale-95">
+      <button class="modal-close-btn absolute top-4 right-5 text-gray-400 hover:text-gray-600 text-3xl">&times;</button>
+      <div class="p-8">
+        <h3 id="modal-title" class="text-2xl font-bold mb-4 text-fuchsia-800"></h3>
+        <div id="modal-description" class="text-gray-700 leading-relaxed"></div>
+        <div id="modal-extra" class="mt-6 text-sm bg-slate-50 p-3 rounded-lg border hidden"></div>
+        <div id="modal-actions" class="mt-6 flex justify-end gap-2 hidden">
+          <button id="modal-prev" class="px-3 py-2 bg-slate-100 rounded hover:bg-slate-200 text-sm">Anterior</button>
+          <button id="modal-next" class="px-3 py-2 bg-fuchsia-600 text-white rounded hover:brightness-95 text-sm">Siguiente</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Estado base y supuestos (coherentes con el dashboard original)
+      const state = {
+        // Créditos por tipo (mismo mapping que el dashboard original)
+        creditCosts: { menor: 1, reforma: 3, nueva: 5 },
+        // Precios coherentes con el original
+        paygCreditPrices: { 1: 59, 3: 165, 5: 269 },
+        plans: [
+          { name:'Starter', monthly:109, discount:0.15, credits:3 },
+          { name:'Profesional', monthly:179, discount:0.20, credits:7, popular:true },
+          { name:'Avanzado', monthly:349, discount:0.25, credits:15 },
+          { name:'Estudio', monthly:629, discount:0.25, credits:30 }
+        ],
+        flatRates: [
+          { name:'Plana Obra Menor', cost:1800, type:'menor' },
+          { name:'Plana Reforma', cost:3800, type:'reforma' },
+          { name:'Plana Obra Nueva', cost:5400, type:'nueva' },
+          { name:'Plana Total', cost:8600, type:'total', popular:true },
+        ],
+
+        // Supuestos productivos y de rechazo (ajustables por el usuario)
+        defaults: {
+          horas: { menor: 4, reforma: 10, nueva: 24 },
+          reduccion: { menor: 0.60, reforma: 0.45, nueva: 0.30 }, // % ahorro de tiempo por tipo
+          reworkHoras: { menor: 1.5, reforma: 3, nueva: 6 }, // horas extra por rechazo
+          rechazoActual: 0.12,   // 12% de expedientes requieren re-trabajo
+          rechazoPragma: 0.04,   // 4% con ENA (Escudo Normativo Activo)
+          tarifaHora: 55    // €/h por profesional cualificado (editable)
+        },
+
+        // Variables runtime
+        charts: {},
+        demo: {
+          steps: [
+            {
+              title: 'Paso 1: Datos del cliente/obra',
+              desc: 'Introduces dirección, tipología y municipio. Lo básico. PRAGMA reconoce el municipio y prepara la normativa aplicable.'
+            },
+            {
+              title: 'Paso 2: Motor PRAGMA',
+              desc: 'Rellena anexos, prepara formularios y valida requisitos. Te evita trabajo mecánico y errores por omisión.'
+            },
+            {
+              title: 'Paso 3: Revisión experta',
+              desc: 'Un arquitecto documentalista valida y ajusta lo necesario. Tu criterio profesional manda.'
+            },
+            {
+              title: 'Paso 4: Entrega y registro',
+              desc: 'Descargas, firmas y entregas en sede. Con RTI tienes trazabilidad de versiones y acciones (seguridad jurídica).'
+            },
+            {
+              title: 'Resultado: Menos horas y menos rechazos',
+              desc: 'Ahorro de tiempo (automatización) + menos re-trabajo (rechazos evitados con ENA). Más proyectos entregados en menos tiempo.'
+            }
+          ],
+          idx: 0
+        }
+      };
+
+      const sidebarLinks = document.querySelectorAll('#sidebar-nav a.sidebar-item');
+      const sections = document.querySelectorAll('main > section');
+      const mainContent = document.querySelector('main');
+      const initializers = {};
+      const $ = (sel, root=document) => root.querySelector(sel);
+
+      // Modal
+      function setupModal(modalId){
+        const modal = document.getElementById(modalId);
+        if(!modal) return;
+        const overlay = modal.querySelector('#generic-modal-overlay');
+        const panel = modal.querySelector('#generic-modal-panel');
+        const closeBtn = modal.querySelector('.modal-close-btn');
+        const actionsBar = modal.querySelector('#modal-actions');
+        const btnPrev = modal.querySelector('#modal-prev');
+        const btnNext = modal.querySelector('#modal-next');
+
+        const open = (title, descHTML, extraHTML='', withActions=false) => {
+          $('#modal-title').textContent = title;
+          $('#modal-description').innerHTML = descHTML;
+          const extra = $('#modal-extra');
+          if(extraHTML){
+            extra.classList.remove('hidden');
+            extra.innerHTML = extraHTML;
+          } else {
+            extra.classList.add('hidden');
+          }
+          if(withActions){
+            actionsBar.classList.remove('hidden');
+          } else {
+            actionsBar.classList.add('hidden');
+          }
+          modal.classList.remove('hidden'); modal.classList.add('flex');
+          anime({ targets: overlay, opacity:[0,1], duration:300 });
+          anime({ targets: panel, opacity:[0,1], scale:[.95,1], translateY:[20,0], duration:300, easing:'easeOutCubic' });
+        };
+        const close = () => {
+          anime({ targets: panel, opacity:0, scale:.95, translateY:20, duration:200, easing:'easeInCubic',
+            complete:()=>modal.classList.add('hidden')});
+          anime({ targets: overlay, opacity:0, duration:200 });
+        };
+        closeBtn.addEventListener('click', close);
+        overlay.addEventListener('click', close);
+        return { open, close, actionsBar, btnPrev, btnNext };
+      }
+      const modal = setupModal('generic-modal');
+
+      // Tooltip simple
+      const tooltipEl = document.createElement('div');
+      tooltipEl.className = 'tooltip card p-4 w-80 text-sm shadow-lg hidden';
+      document.body.appendChild(tooltipEl);
+      function showTooltip(el, html){
+        tooltipEl.innerHTML = html;
+        tooltipEl.classList.remove('hidden');
+        const rect = el.getBoundingClientRect();
+        const top = Math.max(10, rect.top + window.scrollY - tooltipEl.offsetHeight - 10);
+        const left = Math.min(window.innerWidth - tooltipEl.offsetWidth - 10, rect.left + window.scrollX - 20);
+        tooltipEl.style.top = `${top}px`;
+        tooltipEl.style.left = `${left}px`;
+      }
+      function hideTooltip(){
+        tooltipEl.classList.add('hidden');
+      }
+
+      // Rellenar secciones
+      function fillSections() {
+        // INICIO (Hero + métricas rápidas)
+        $('#inicio').innerHTML = `
+          <header class="mb-10">
+            <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+              <div class="flex items-center gap-3">
+                <span class="info-badge">Fase 1</span>
+                <span class="info-badge">Especializado en estudios de arquitectura</span>
+                <span class="info-badge">Seguridad jurídica</span>
+                <span class="info-badge">Menos trabajo manual</span>
+              </div>
+              <a href="#como-funciona" id="open-demo-btn" data-section="como-funciona" class="hidden sm:inline-flex sidebar-item bg-fuchsia-600 text-white px-4 py-2 rounded-lg hover:brightness-95">Ver demo guiada</a>
+            </div>
+            <h2 class="text-4xl md:text-5xl font-extrabold text-gray-900 leading-tight">
+              Ahorra horas cualificadas y evita rechazos.
+              <span class="bg-clip-text text-transparent bg-gradient-to-r from-fuchsia-600 to-violet-700">Documentación municipal</span> en tiempo récord.
+            </h2>
+            <p class="mt-3 text-lg text-gray-600 max-w-3xl">
+              PRAGMA es tu asistente documental “human-in-the-loop”: automatizamos, vigilamos normativa y te devolvemos tiempo de estudio. Sin cambiar tu forma de trabajar.
+            </p>
+          </header>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 animated-content">
+            ${[
+              { icon:'⚡', title:'-60% tiempo en obra menor', desc:'Automatización y plantillas por municipio.' },
+              { icon:'🛡️', title:'ENA: normativa <48h hábiles', desc:'Escudo Normativo Activo con experto.' },
+              { icon:'📦', title:'Modelo por créditos o tarifa', desc:'Precios claros; sin sorpresas.' },
+            ].map(x=>`
+              <div class="card card-hover p-6">
+                <div class="text-2xl">${x.icon}</div>
+                <div class="mt-2 text-xl font-bold text-fuchsia-800">${x.title}</div>
+                <div class="text-sm text-slate-600">${x.desc}</div>
+              </div>
+            `).join('')}
+          </div>
+
+          <div class="card card-hover p-6 mt-6 bg-fuchsia-50">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <div class="font-semibold text-sm text-fuchsia-800">Demo guiada (2 minutos)</div>
+                <div class="text-gray-700 text-sm">Ve paso a paso cómo trabajas con PRAGMA, de la obra al expediente aprobado.</div>
+              </div>
+              <a href="#como-funciona" data-section="como-funciona" class="sidebar-item px-4 py-2 rounded-lg bg-white border hover:bg-slate-50">Abrir demo</a>
+            </div>
+          </div>
+        `;
+
+        // CÓMO FUNCIONA (flujo + modales + demo guiada + beneficios directos)
+        $('#como-funciona').innerHTML = `
+          <header class="mb-10">
+            <h2 class="text-4xl font-bold text-gray-900">Cómo funciona</h2>
+            <p class="mt-2 text-lg text-gray-600">
+              PRAGMA se integra en tu rutina. Tú decides: subes datos, revisas y entregas con trazabilidad.
+            </p>
+          </header>
+
+          <div class="space-y-8 animated-content">
+            <div class="card p-8">
+              <h3 class="text-2xl font-bold text-gray-800 mb-6">Flujo en 4 pasos</h3>
+              <div id="workflow-visual" class="relative min-h-[150px]">
+                <div class="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0 md:space-x-4">
+                  ${[
+                    {icon:'📝',label:'1. Datos del cliente/obra',desc:'Formulario rápido: dirección, tipología, municipio.'},
+                    {icon:'⚙️',label:'2. Motor PRAGMA',desc:'Rellena, prepara anexos y valida requisitos.'},
+                    {icon:'🔍',label:'3. Revisión experta',desc:'Arquitecto documentalista revisa y ajusta.'},
+                    {icon:'📄',label:'4. Entrega y registro',desc:'Descarga/entrega en sede con RTI (trazabilidad).'}
+                  ].map(step=>`
+                    <div class="workflow-step flex-1 flex flex-col items-center text-center transition-all duration-300 clickable-pulse"
+                      data-open-modal='{"title":"${step.label}","desc":"${step.desc}","extra":""}'>
+                      <div class="bg-slate-100 text-3xl w-20 h-20 rounded-full flex items-center justify-center border-2 border-transparent">${step.icon}</div>
+                      <p class="mt-2 font-semibold text-sm text-slate-600">${step.label}</p>
+                    </div>
+                  `).join('<div class="hidden md:block text-slate-300 text-2xl font-light">→</div>')}
+                </div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div class="card p-8">
+                <div class="flex items-start justify-between gap-4">
+                  <div>
+                    <h3 class="text-2xl font-bold text-gray-800 mb-1">Demo guiada</h3>
+                    <p class="text-sm text-slate-600 mb-4">2 minutos para verlo claro. Paso a paso, sin tecnicismos.</p>
+                  </div>
+                  <button id="start-demo-btn" class="px-3 py-2 bg-fuchsia-600 text-white rounded hover:brightness-95 text-sm">Iniciar demo</button>
+                </div>
+                <ul class="list-disc list-inside text-sm text-slate-700 space-y-1">
+                  <li>Cómo PRAGMA reduce horas de tareas repetitivas.</li>
+                  <li>Qué valida el experto y qué entregas tú.</li>
+                  <li>Cómo RTI te aporta seguridad jurídica.</li>
+                </ul>
+              </div>
+
+              <div class="card p-8 bg-slate-50">
+                <h3 class="text-2xl font-bold text-gray-800 mb-2">Solo lo que te importa</h3>
+                <ul class="list-disc list-inside text-sm text-slate-700 space-y-2">
+                  <li>Normativa municipal recopilada y actualizada automáticamente.</li>
+                  <li>La primera entrega puede demorarse mientras recopilamos normativa local.</li>
+                  <li>Una vez recopilada y actualizada: normativa municipal disponible al instante.</li>
+                </ul>
+                <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div class="card p-4">
+                    <div class="font-semibold text-fuchsia-800">Arquitecto autónomo</div>
+                    <ul class="text-sm text-slate-700 list-disc list-inside">
+                      <li>Rapidez en trámites.</li>
+                      <li>Evita errores y subsanaciones.</li>
+                      <li>Más proyectos al mes, menos estrés.</li>
+                    </ul>
+                  </div>
+                  <div class="card p-4">
+                    <div class="font-semibold text-fuchsia-800">CEO (5–7 arquitectos)</div>
+                    <ul class="text-sm text-slate-700 list-disc list-inside">
+                      <li>Control de tiempos y estándares.</li>
+                      <li>Seguridad jurídica y trazabilidad (RTI).</li>
+                      <li>Menos trabajo manual, mejores márgenes.</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div class="card p-8 bg-fuchsia-50 clickable-pulse"
+                data-open-modal='{"title":"Escudo Normativo Activo (ENA)","desc":"Vigilancia continua de boletines y fuentes oficiales. Un arquitecto documentalista interpreta y codifica cambios en <strong>&lt;48h hábiles</strong>.","extra":"Beneficio: rechazo reducido, menos re-trabajo y entregas correctas a la primera."}'>
+                <h3 class="text-2xl font-bold text-gray-800 mb-1">Escudo Normativo Activo</h3>
+                <p class="text-sm text-slate-600">Actualizaciones con respaldo humano.</p>
+              </div>
+
+              <div class="card p-8 bg-violet-50 clickable-pulse"
+                data-open-modal='{"title":"Registro de Trazabilidad Inmutable (RTI)","desc":"Sellado temporal de acciones, versiones y validaciones por expediente. Evidencia objetiva ante auditorías.","extra":"Beneficio: seguridad jurídica y confianza profesional."}'>
+                <h3 class="text-2xl font-bold text-gray-800 mb-1">Registro de Trazabilidad Inmutable</h3>
+                <p class="text-sm text-slate-600">Auditable y respetuoso con RGPD/LOPDGDD.</p>
+              </div>
+            </div>
+          </div>
+        `;
+
+        // CALCULA TU AHORRO (calculadora integral + tooltip ℹ️ + ayudas por campo)
+        $('#ahorro').innerHTML = `
+          <header class="mb-10">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <h2 class="text-4xl font-bold text-gray-900 flex items-center gap-2">
+                  Calcula tu ahorro
+                  <span id="calc-info-icon" class="inline-flex items-center justify-center w-6 h-6 text-[13px] rounded-full bg-slate-100 border cursor-pointer" title="¿Qué es esto?">ℹ️</span>
+                </h2>
+                <p class="mt-2 text-lg text-gray-600">
+                  Introduce tu volumen anual y tu realidad. Te mostramos ahorro en horas, en € y el plan recomendado.
+                </p>
+              </div>
+              <a href="#precios" data-section="precios" class="hidden md:inline-flex sidebar-item bg-fuchsia-600 text-white px-4 py-2 rounded-lg hover:brightness-95">Ver planes</a>
+            </div>
+          </header>
+
+          <div class="space-y-8 animated-content">
+            <div class="card p-8">
+              <h3 class="text-2xl font-semibold mb-6">Volumen anual</h3>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-6">
+                <div>
+                  <label for="vol-menor" class="text-sm font-medium">Nº Obras Menores/año</label>
+                  <input type="number" id="vol-menor" class="mt-1 w-full p-2 border rounded-md" min="0" max="500" value="12">
+                </div>
+                <div>
+                  <label for="vol-reforma" class="text-sm font-medium">Nº Reformas/año</label>
+                  <input type="number" id="vol-reforma" class="mt-1 w-full p-2 border rounded-md" min="0" max="300" value="6">
+                </div>
+                <div>
+                  <label for="vol-nueva" class="text-sm font-medium">Nº Obras Nuevas/año</label>
+                  <input type="number" id="vol-nueva" class="mt-1 w-full p-2 border rounded-md" min="0" max="50" value="2">
+                </div>
+              </div>
+
+              <div class="mt-8">
+                <div class="flex items-center gap-3">
+                  <button id="toggle-advance" class="text-sm text-fuchsia-700 underline">Ajustes avanzados</button>
+                  <span id="adv-info" class="inline-flex items-center justify-center w-5 h-5 text-[11px] rounded-full bg-slate-100 border cursor-pointer" title="Ayuda">ℹ️</span>
+                </div>
+                <div id="advance-panel" class="mt-4 hidden">
+                  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="card p-4 bg-slate-50">
+                      <div class="text-sm font-semibold text-slate-700 mb-2">Horas por expediente (hoy)</div>
+                      <label class="text-xs" for="h-menor">Obra menor</label>
+                      <input type="number" id="h-menor" class="w-full p-2 border rounded-md mb-2" min="1" max="20" step="0.5" value="${state.defaults.horas.menor}">
+                      <label class="text-xs" for="h-reforma">Reforma</label>
+                      <input type="number" id="h-reforma" class="w-full p-2 border rounded-md mb-2" min="1" max="50" step="0.5" value="${state.defaults.horas.reforma}">
+                      <label class="text-xs" for="h-nueva">Obra nueva</label>
+                      <input type="number" id="h-nueva" class="w-full p-2 border rounded-md" min="1" max="120" step="1" value="${state.defaults.horas.nueva}">
+                    </div>
+                    <div class="card p-4 bg-slate-50">
+                      <div class="text-sm font-semibold text-slate-700 mb-2">Ahorro de tiempo con PRAGMA</div>
+                      <label class="text-xs" for="red-menor">Obra menor</label>
+                      <input type="range" id="red-menor" min="0.2" max="0.8" step="0.05" value="${state.defaults.reduccion.menor}">
+                      <div class="text-xs text-slate-600 mb-2"><span id="red-menor-val">${Math.round(state.defaults.reduccion.menor*100)}</span>%</div>
+                      <label class="text-xs" for="red-reforma">Reforma</label>
+                      <input type="range" id="red-reforma" min="0.2" max="0.8" step="0.05" value="${state.defaults.reduccion.reforma}">
+                      <div class="text-xs text-slate-600 mb-2"><span id="red-reforma-val">${Math.round(state.defaults.reduccion.reforma*100)}</span>%</div>
+                      <label class="text-xs" for="red-nueva">Obra nueva</label>
+                      <input type="range" id="red-nueva" min="0.1" max="0.7" step="0.05" value="${state.defaults.reduccion.nueva}">
+                      <div class="text-xs text-slate-600"><span id="red-nueva-val">${Math.round(state.defaults.reduccion.nueva*100)}</span>%</div>
+                    </div>
+                    <div class="card p-4 bg-slate-50">
+                      <div class="text-sm font-semibold text-slate-700 mb-2">Rechazos y coste hora</div>
+                      <label class="text-xs" for="rate">Tarifa/hora (€/h)</label>
+                      <input type="number" id="rate" class="w-full p-2 border rounded-md mb-2" min="20" max="120" step="1" value="${state.defaults.tarifaHora}">
+                      <label class="text-xs" for="rej-actual">Rechazo hoy</label>
+                      <input type="range" id="rej-actual" min="0.00" max="0.3" step="0.01" value="${state.defaults.rechazoActual}">
+                      <div class="text-xs text-slate-600 mb-2"><span id="rej-actual-val">${Math.round(state.defaults.rechazoActual*100)}</span>%</div>
+                      <label class="text-xs" for="rej-pragma">Rechazo con PRAGMA</label>
+                      <input type="range" id="rej-pragma" min="0.00" max="0.2" step="0.01" value="${state.defaults.rechazoPragma}">
+                      <div class="text-xs text-slate-600"><span id="rej-pragma-val">${Math.round(state.defaults.rechazoPragma*100)}</span>%</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Panel de ayuda contextual por campo -->
+              <div id="field-help-container" class="mt-6">
+                <div class="card p-4 bg-slate-50">
+                  <div class="text-sm font-semibold text-slate-700 mb-2">Ayuda contextual</div>
+                  <div id="field-help-text" class="text-sm text-slate-700">Haz clic en cualquier campo para ver una explicación práctica orientada a arquitectos.</div>
+                </div>
+              </div>
+
+              <div class="mt-8 grid grid-cols-1 md:grid-cols-4 gap-4 text-center" id="ahorro-kpis">
+                <div class="bg-violet-100 p-4 rounded-lg">
+                  <div class="text-sm text-slate-600">Ahorro anual estimado</div>
+                  <div id="kpi-ahorro-euros" class="text-2xl font-extrabold text-fuchsia-700">—</div>
+                </div>
+                <div class="bg-green-100 p-4 rounded-lg">
+                  <div class="text-sm text-slate-600">Horas cualificadas ahorradas</div>
+                  <div id="kpi-ahorro-horas" class="text-2xl font-extrabold text-green-700">—</div>
+                </div>
+                <div class="bg-slate-100 p-4 rounded-lg">
+                  <div class="text-sm text-slate-600">Plan recomendado</div>
+                  <div id="kpi-plan" class="text-xl font-bold text-slate-800">—</div>
+                </div>
+                <div class="bg-amber-100 p-4 rounded-lg">
+                  <div class="text-sm text-slate-600">Payback estimado</div>
+                  <div id="kpi-payback" class="text-xl font-bold text-amber-800">—</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div class="card p-8">
+                <h3 class="text-xl font-semibold mb-4">Horas anuales: Antes vs Con PRAGMA</h3>
+                <div class="h-80 relative"><canvas id="horasChart"></canvas></div>
+              </div>
+              <div class="card p-8">
+                <h3 class="text-xl font-semibold mb-4">¿De dónde viene el ahorro?</h3>
+                <div class="h-80 relative"><canvas id="origenAhorroChart"></canvas></div>
+                <p class="text-xs text-slate-500 mt-2">Automatización del flujo vs rechazos evitados por ENA.</p>
+              </div>
+            </div>
+
+            <div class="card p-8">
+              <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div>
+                  <div class="text-sm text-slate-600">Coste anual estimado PRAGMA</div>
+                  <div id="res-coste" class="text-2xl font-extrabold text-slate-900">—</div>
+                  <div id="res-roi" class="text-sm text-slate-600 mt-1">ROI —</div>
+                </div>
+                <div class="flex gap-2 flex-wrap">
+                  <a id="cta-contact" href="mailto:albertgraulaboral@gmail.com?subject=Quiero%20mi%20plan%20PRAGMA" class="px-4 py-2 bg-slate-100 rounded hover:bg-slate-200">📧 Solicitar propuesta</a>
+                  <a id="cta-whatsapp" href="https://wa.me/34633243322" target="_blank" class="px-4 py-2 bg-green-100 text-green-800 rounded hover:bg-green-200">💬 Hablar por WhatsApp</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+
+        // PRECIOS (ahora incluye bloque visible de Sistema de Créditos y Ventas)
+        $('#precios').innerHTML = `
+          <header class="mb-10">
+            <h2 class="text-4xl font-bold text-gray-900">Planes y precios</h2>
+            <p class="mt-2 text-lg text-gray-600">
+              Modelo por créditos (mensual/anual) o tarifa plana por tipología. Sin permanencias obligatorias.
+            </p>
+          </header>
+
+          <div class="space-y-10 animated-content">
+            <!-- Bloque muy visible: Sistema de créditos y ventas -->
+            <div class="card p-8 bg-fuchsia-50">
+              <h3 class="text-2xl font-bold text-gray-800 mb-4">Sistema de créditos y ventas</h3>
+              <p class="text-sm text-slate-700 mb-4">
+                Un <strong>crédito</strong> equivale a tramitar una tipología concreta. Así lo distribuimos:
+                <span class="inline-block ml-1 px-2 py-0.5 rounded bg-white border text-xs">Obra menor = 1 crédito</span>
+                <span class="inline-block ml-1 px-2 py-0.5 rounded bg-white border text-xs">Reforma = 3 créditos</span>
+                <span class="inline-block ml-1 px-2 py-0.5 rounded bg-white border text-xs">Obra nueva = 5 créditos</span>
+              </p>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="card p-6 sales-card cursor-pointer" data-branch="suscripcion">
+                  <div class="flex items-start justify-between gap-3">
+                    <div>
+                      <div class="text-lg font-bold">Suscripción</div>
+                      <div class="text-xs text-slate-600">Créditos mensuales + descuento anual</div>
+                    </div>
+                    <span class="text-xl">📅</span>
+                  </div>
+                  <div class="sales-details mt-4">
+                    <div class="text-sm text-slate-700 space-y-2">
+                      <p><strong>Qué es:</strong> Pago fijo al mes (o anual con descuento). Incluye X créditos/mes; si te pasas, compras extras a precio unitario.</p>
+                      <p><strong>Por qué convence a arquitectos:</strong> Previsibilidad de costes, mejor precio por crédito y control de flujo.</p>
+                      <ul class="list-disc list-inside">
+                        <li>Ideal si tramitas regularmente (mín. 2–3 expedientes/mes).</li>
+                        <li>Reduce riesgos de rechazo con ENA, mejora márgenes.</li>
+                        <li>Recomendado para estudios con pipeline estable.</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+                <div class="card p-6 sales-card cursor-pointer" data-branch="plana">
+                  <div class="flex items-start justify-between gap-3">
+                    <div>
+                      <div class="text-lg font-bold">Tarifa plana</div>
+                      <div class="text-xs text-slate-600">Por tipología de expediente</div>
+                    </div>
+                    <span class="text-xl">🏷️</span>
+                  </div>
+                  <div class="sales-details mt-4">
+                    <div class="text-sm text-slate-700 space-y-2">
+                      <p><strong>Qué es:</strong> Pago anual fijo que cubre <em>ilimitado</em> en una tipología (p. ej. Obra menor) sin contar créditos.</p>
+                      <p><strong>Beneficios:</strong> Simplicidad contable, previsibilidad total, foco en tu tipología fuerte.</p>
+                      <ul class="list-disc list-inside">
+                        <li>Perfecto si concentras volumen en una tipología.</li>
+                        <li>Evita sobrecostes por picos en un tipo de trámite.</li>
+                        <li>Recomendado para equipos con nicho claro.</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+                <div class="card p-6 sales-card cursor-pointer" data-branch="creditos">
+                  <div class="flex items-start justify-between gap-3">
+                    <div>
+                      <div class="text-lg font-bold">Créditos sueltos</div>
+                      <div class="text-xs text-slate-600">Paga por uso (1, 3 o 5)</div>
+                    </div>
+                    <span class="text-xl">💠</span>
+                  </div>
+                  <div class="sales-details mt-4">
+                    <div class="text-sm text-slate-700 space-y-2">
+                      <p><strong>Qué es:</strong> Compra packs (1/3/5 créditos) solo cuando los necesitas.</p>
+                      <p><strong>Cuándo conviene:</strong> Para empezar sin compromiso, cubrir puntas o si tu volumen es bajo.</p>
+                      <ul class="list-disc list-inside">
+                        <li>Sin permanencia, riesgo cero.</li>
+                        <li>Recomendado para autónomos con pocos expedientes.</li>
+                        <li>Prueba real antes de pasar a suscripción.</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="card p-4">
+                  <div class="font-semibold text-fuchsia-800">Si eres autónomo</div>
+                  <p class="text-sm text-slate-700">Empieza con <strong>Créditos</strong> para validar el ahorro. Si tramitas de forma continua, pasa a <strong>Suscripción Starter</strong>.</p>
+                </div>
+                <div class="card p-4">
+                  <div class="font-semibold text-fuchsia-800">Si diriges un estudio (5–7 arquitectos)</div>
+                  <p class="text-sm text-slate-700">Para carga estable, <strong>Suscripción Profesional/Avanzado</strong>. Si el 80% es Obra menor, evalúa <strong>Tarifa Plana OM</strong>.</p>
+                </div>
+              </div>
+              <div class="mt-4 flex flex-wrap gap-2">
+                <a href="#ahorro" data-section="ahorro" class="sidebar-item inline-flex px-4 py-2 rounded-lg bg-fuchsia-600 text-white hover:brightness-95">Ver recomendación en la calculadora</a>
+                <a href="#contacto" data-section="contacto" class="sidebar-item inline-flex px-4 py-2 rounded-lg bg-white border hover:bg-slate-50">Pedir propuesta</a>
+              </div>
+            </div>
+
+            <div class="card p-8">
+              <div class="border-b border-gray-200 mb-6">
+                <nav id="pricing-tabs" class="-mb-px flex space-x-6 overflow-x-auto" aria-label="Tabs">
+                  <button data-tab="suscripcion" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm text-fuchsia-600 border-fuchsia-500">Suscripción por Créditos</button>
+                  <button data-tab="payg" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm text-gray-500 border-transparent hover:text-gray-300">Créditos Sueltos</button>
+                  <button data-tab="plana" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm text-gray-500 border-transparent hover:text-gray-300">Tarifas Planas</button>
+                </nav>
+              </div>
+
+              <div id="tab-content-suscripcion" class="tab-content">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 text-center">
+                  ${state.plans.map(p=>`
+                    <div class="border p-6 rounded-lg relative ${p.popular?'border-2 border-fuchsia-600':''}">
+                      ${p.popular?'<div class="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2 bg-fuchsia-600 text-white text-xs font-bold px-3 py-1 rounded-full">POPULAR</div>':''}
+                      <h4 class="text-xl font-bold">${p.name}</h4>
+                      <div class="my-4 flex justify-center items-baseline">
+                        <span class="text-5xl font-bold ${p.popular?'text-fuchsia-600':''}">€${p.monthly}</span>
+                        <span class="text-gray-500 ml-1">/mes</span>
+                      </div>
+                      <p class="text-sm font-semibold text-fuchsia-800 bg-fuchsia-100 py-1 px-2 rounded-md inline-block">${p.credits} créditos/mes</p>
+                      <p class="text-xs text-gray-600 mt-3">Pago anual: hasta -${Math.round((p.discount||0)*100)}%</p>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+
+              <div id="tab-content-payg" class="tab-content hidden">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+                  ${[{credits:1,price:59},{credits:3,price:165},{credits:5,price:269}].map(p=>`
+                    <div class="border p-6 rounded-lg">
+                      <h4>${p.credits} Crédito${p.credits>1?'s':''}</h4>
+                      <p class="text-4xl font-bold my-2">€${p.price}</p>
+                      <p class="text-sm text-gray-500">€${(p.price/p.credits).toFixed(2)}/crédito</p>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+
+              <div id="tab-content-plana" class="tab-content hidden">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 text-center">
+                  ${state.flatRates.map(p=>`
+                    <div class="border p-4 rounded-lg ${p.popular?'border-2 border-fuchsia-600':''}">
+                      <h4 class="font-bold h-10 flex items-center justify-center">${p.name}</h4>
+                      <p class="text-3xl font-bold my-1 ${p.popular?'text-fuchsia-600':''}">€${p.cost.toLocaleString('es-ES')}</p>
+                      <p class="text-gray-500 text-sm">/año</p>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            </div>
+
+            <div class="card p-8">
+              <h3 class="text-xl font-semibold mb-4">¿Cuál me conviene?</h3>
+              <p class="text-sm text-slate-600">Usa la sección “Calcula tu ahorro”: recomendamos el plan óptimo respecto a tu volumen y lo comparamos vs PayG.</p>
+              <a href="#ahorro" data-section="ahorro" class="sidebar-item inline-flex mt-4 px-4 py-2 rounded-lg bg-fuchsia-600 text-white hover:brightness-95">Ir a la calculadora</a>
+            </div>
+          </div>
+        `;
+
+        // CASOS Y EJEMPLOS (presets que cargan la calculadora)
+        $('#casos').innerHTML = `
+          <header class="mb-10">
+            <h2 class="text-4xl font-bold text-gray-900">Casos y ejemplos</h2>
+            <p class="mt-2 text-lg text-gray-600">Escoge el que más se parece a ti y simula al instante.</p>
+          </header>
+
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 animated-content">
+            ${[
+              { icon:'👤', title:'Autónomo', vol:{menor:10,reforma:4,nueva:1}, rate:45,
+                text:'Carga de obra menor y reformas. Busca agilidad y evitar rechazos.' },
+              { icon:'👥', title:'Estudio 3 pax', vol:{menor:24,reforma:12,nueva:3}, rate:55,
+                text:'Mejora de márgenes y control del flujo documental.' },
+              { icon:'🏢', title:'Estudio 8 pax', vol:{menor:60,reforma:24,nueva:8}, rate:65,
+                text:'Estandarización, SLA interno y visibilidad sobre tiempos.' }
+            ].map(c=>`
+              <div class="card card-hover p-6 cursor-pointer">
+                <div class="text-3xl">${c.icon}</div>
+                <h3 class="text-xl font-bold mt-2">${c.title}</h3>
+                <p class="text-sm text-slate-600 mt-2">${c.text}</p>
+                <div class="text-xs text-slate-500 mt-3">
+                  Volumen: ${c.vol.menor} OM / ${c.vol.reforma} Ref / ${c.vol.nueva} ON • Tarifa: €${c.rate}/h
+                </div>
+                <button class="mt-4 px-3 py-2 bg-fuchsia-600 text-white rounded hover:brightness-95 preset-btn"
+                  data-vol='${JSON.stringify(c.vol)}' data-rate="${c.rate}">
+                  Usar en la calculadora
+                </button>
+              </div>
+            `).join('')}
+          </div>
+        `;
+
+        // ROADMAP (orientado a clientes: Fase 1 y siguientes herramientas)
+        $('#roadmap').innerHTML = `
+          <header class="mb-10">
+            <h2 class="text-4xl font-bold text-gray-900">Roadmap para estudios (Fase 1 →)</h2>
+            <p class="mt-2 text-lg text-gray-600">Hoy empezamos por lo que más ahorra. Cada trimestre añadimos nuevas herramientas para arquitectos.</p>
+          </header>
+
+          <div class="animated-content">
+            <div class="card p-8">
+              <div class="relative border-l-2 border-fuchsia-200 ml-4">
+                ${[
+                  {time:'Fase 1 (ahora)', items:[
+                    {icon:'🚀',title:'Obra menor (assabentat)',desc:'Plantillas por municipio + anexos + ENA.'},
+                    {icon:'🔐',title:'RTI + roles',desc:'Trazabilidad de expedientes y permisos.'},
+                    {icon:'🧩',title:'Anexos frecuentes',desc:'Cálculos y justificantes repetitivos.'}
+                  ]},
+                  {time:'Próxima (Q+1)', items:[
+                    {icon:'🏗️',title:'Reformas',desc:'Ampliamos tipologías y anexos específicos.'},
+                    {icon:'🔗',title:'Conectores Catastro/Referencia Catastral',desc:'Autocompletado de datos clave.'}
+                  ]},
+                  {time:'Siguientes', items:[
+                    {icon:'📊',title:'Analytics de estudio',desc:'Tiempos, embudos y mejoras continuas.'},
+                    {icon:'📄',title:'Generador de pliegos (beta)',desc:'Para licitaciones y pliegos internos.'}
+                  ]}
+                ].map(phase=>`
+                  <div class="mb-10">
+                    <h4 class="font-bold text-xl text-fuchsia-800 mb-3 ml-8">${phase.time}</h4>
+                    ${phase.items.map(item=>`
+                      <div class="timeline-item mb-2 ml-10 p-3 rounded-lg"
+                        data-open-modal='{"title":"${item.title}","desc":"${item.desc}","extra":""}'>
+                        <span class="timeline-icon absolute -left-5 flex items-center justify-center w-10 h-10 bg-fuchsia-200 text-xl rounded-full ring-8 ring-white">${item.icon}</span>
+                        <div>
+                          <h5 class="font-medium text-gray-800">${item.title}</h5>
+                          <p class="text-sm text-gray-600">${item.desc}</p>
+                        </div>
+                      </div>
+                    `).join('')}
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+            <div class="card p-6 mt-6 bg-fuchsia-50">
+              <div class="text-sm text-fuchsia-800 font-semibold">Mensaje</div>
+              <div class="text-sm text-gray-700">Esta es la Fase 1 de herramientas para arquitectos. Tu feedback prioriza qué añadimos después.</div>
+            </div>
+          </div>
+        `;
+
+        // INTEGRACIONES Y SEGURIDAD
+        $('#integraciones').innerHTML = `
+          <header class="mb-10">
+            <h2 class="text-4xl font-bold text-gray-900">Integraciones y seguridad</h2>
+            <p class="mt-2 text-lg text-gray-600">Tu estudio, tu forma de trabajar. PRAGMA se adapta a ti.</p>
+          </header>
+
+          <div class="space-y-8 animated-content">
+            <div class="card p-8">
+              <h3 class="text-2xl font-semibold mb-4">Integraciones</h3>
+              <div class="flex flex-wrap gap-3 text-sm">
+                ${[
+                  {name:'Catastro',desc:'Búsqueda y autocompletado de datos.'},
+                  {name:'Sedes municipales',desc:'Entrega/acceso ágil a formularios.'},
+                  {name:'Google Drive',desc:'Sincroniza expedientes con tu carpeta.'},
+                  {name:'Crisp.chat',desc:'Soporte y comunicación centralizada.'},
+                  {name:'Correo',desc:'Notificaciones y resúmenes automatizados.'}
+                ].map(t=>`
+                  <div class="clickable-pulse bg-fuchsia-100 text-fuchsia-800 font-medium px-4 py-2 rounded-full"
+                    data-open-modal='{"title":"${t.name}","desc":"${t.desc}","extra":""}'>${t.name}</div>
+                `).join('')}
+              </div>
+            </div>
+
+            <div class="card p-8">
+              <h3 class="text-2xl font-semibold mb-4">Cumplimiento y privacidad</h3>
+              <ul class="list-disc list-inside text-sm text-slate-700 space-y-2">
+                <li>Privacidad por diseño; minimización de datos; registro de accesos.</li>
+                <li>RTI: evidencia objetiva de versiones y validaciones.</li>
+                <li>Retención y supresión por expediente; control de permisos.</li>
+              </ul>
+            </div>
+          </div>
+        `;
+
+        // FAQ (Acordeón)
+        $('#faq').innerHTML = `
+          <header class="mb-10">
+            <h2 class="text-4xl font-bold text-gray-900">Preguntas frecuentes</h2>
+            <p class="mt-2 text-lg text-gray-600">Resolvemos dudas habituales de estudios y arquitectos.</p>
+          </header>
+
+          <div class="space-y-4 animated-content" id="faq-accordion">
+            ${[
+              {q:'¿Me sustituye PRAGMA?',a:'No. PRAGMA acelera tu flujo y te respalda con trazabilidad y validación experta. Tu criterio profesional es central.'},
+              {q:'¿Qué municipios cubrís?',a:'Empezamos por Cataluña (obra menor/assabentat) y ampliamos cada trimestre. Si necesitas uno específico, lo priorizamos.'},
+              {q:'¿Qué pasa si cambia la normativa?',a:'El ENA revisa boletines; un arquitecto documentalista codifica cambios en &lt;48h hábiles.'},
+              {q:'¿Cómo es el soporte?',a:'Chat directo; onboarding en 48h; documentación y asistencia en expedientes clave.'},
+              {q:'¿Hay permanencia?',a:'No. Puedes empezar con créditos sueltos y cambiar a plan cuando te convenga.'},
+            ].map(item=>`
+              <div class="card faq-card">
+                <div class="p-6 flex justify-between items-center cursor-pointer">
+                  <h3 class="text-lg font-semibold">${item.q}</h3>
+                  <div class="faq-arrow text-gray-500"><svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg></div>
+                </div>
+                <div class="faq-details bg-slate-50 border-t border-slate-200">
+                  <div class="p-6 text-sm text-gray-700">${item.a}</div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+
+        // CONTACTO (CTA)
+        $('#contacto').innerHTML = `
+          <header class="mb-10">
+            <h2 class="text-4xl font-bold text-gray-900">Contacto</h2>
+            <p class="mt-2 text-lg text-gray-600">Pide tu demo y tu propuesta optimizada en base a tu volumen.</p>
+          </header>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-8 animated-content">
+            <div class="card p-8 text-center flex flex-col justify-center items-center">
+              <div class="w-32 h-32 rounded-full mb-4 border-4 border-white shadow-lg bg-gradient-to-br from-fuchsia-100 to-violet-100 flex items-center justify-center text-5xl">AG</div>
+              <h3 class="text-2xl font-bold">Albert Grau Garcia</h3>
+              <p class="text-fuchsia-600 font-semibold">Fundador & CEO</p>
+              <div class="mt-6 w-full max-w-xs space-y-3">
+                <a href="mailto:albertgraulaboral@gmail.com" class="block w-full p-3 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">albertgraulaboral@gmail.com</a>
+                <a href="https://wa.me/34633243322" target="_blank" rel="noopener noreferrer" class="block w-full p-3 bg-green-100 hover:bg-green-200 rounded-lg transition-colors font-semibold text-green-800">Contactar por WhatsApp</a>
+                <a href="https://www.linkedin.com/in/albertgraugarcia" target="_blank" rel="noopener noreferrer" class="block w-full p-3 bg-sky-100 hover:bg-sky-200 rounded-lg transition-colors font-semibold text-sky-800">Perfil de LinkedIn</a>
+              </div>
+            </div>
+
+            <div class="card p-8">
+              <h3 class="text-2xl font-bold mb-6">Qué incluye la demo</h3>
+              <ul class="list-disc list-inside text-sm text-slate-700 space-y-2">
+                <li>Simulación sobre un expediente tuyo real.</li>
+                <li>Estimación de horas y € ahorrados con tus parámetros.</li>
+                <li>Propuesta de plan y siguientes pasos de onboarding.</li>
+              </ul>
+              <a href="#ahorro" data-section="ahorro" class="sidebar-item inline-flex mt-6 px-4 py-2 rounded-lg bg-fuchsia-600 text-white hover:brightness-95">Calcular ahorro ahora</a>
+            </div>
+          </div>
+        `;
+      }
+
+      // Helpers de navegación y animación
+      function setActiveSection(sectionId){
+        const all = document.querySelectorAll('main > section');
+        let sectionFound = all[0].id;
+        all.forEach(s=>{ if(s.id === sectionId) sectionFound = sectionId; });
+        mainContent.scrollTop = 0;
+        all.forEach(s=>{
+          s.style.display = s.id === sectionFound ? 'block' : 'none';
+          s.classList.toggle('active', s.id === sectionFound);
+        });
+        anime({
+          targets: `#${sectionFound} .animated-content > *`,
+          translateY: [20,0], opacity:[0,1],
+          delay: anime.stagger(80,{start:100}), easing:'easeOutExpo', duration:800
+        });
+        sidebarLinks.forEach(link=>{
+          const isTarget = link.dataset.section === sectionFound;
+          link.classList.toggle('active', isTarget);
+          link.classList.toggle('bg-fuchsia-100', isTarget);
+          link.classList.toggle('text-fuchsia-800', isTarget);
+        });
+        if(initializers[sectionFound] && !initializers[sectionFound].hasRun){
+          initializers[sectionFound].func();
+          initializers[sectionFound].hasRun = true;
+        }
+      }
+      function registerInitializer(id, func){ initializers[id] = { func, hasRun:false }; }
+
+      // Lógica de precios: coste óptimo anual coherente con el original
+      function bestAnnualCost(totalCredits, vol){
+        const { paygCreditPrices, plans, flatRates, creditCosts } = state;
+
+        // PayG por packs (voraz: 5, 3, 1)
+        function paygCostForCredits(credits){
+          let c = credits, cost = 0;
+          const pack5 = Math.floor(c/5); c -= pack5*5; cost += pack5*paygCreditPrices[5];
+          const pack3 = Math.floor(c/3); c -= pack3*3; cost += pack3*paygCreditPrices[3];
+          cost += c * paygCreditPrices[1];
+          return cost;
+        }
+
+        const options = [];
+        // Opción PayG pura
+        options.push({ name:'Créditos Sueltos (PayG)', cost: paygCostForCredits(totalCredits) });
+
+        // Suscripciones anuales + extras
+        plans.forEach(plan=>{
+          const annualCost = plan.monthly * 12 * (1 - (plan.discount||0));
+          const annualCredits = plan.credits * 12;
+          let extraCost = 0;
+          if(totalCredits > annualCredits){
+            const extra = totalCredits - annualCredits;
+            extraCost = paygCostForCredits(extra);
+          }
+          options.push({ name:`Suscripción Anual ${plan.name}`, cost: Math.round(annualCost + extraCost) });
+        });
+
+        // Tarifas planas (sumando fuera de cobertura como PayG)
+        flatRates.forEach(fr=>{
+          let cost = fr.cost;
+          // créditos anuales por tipo
+          const creditsMenor = vol.menor * creditCosts.menor;
+          const creditsRef = vol.reforma * creditCosts.reforma;
+          const creditsNueva = vol.nueva * creditCosts.nueva;
+          if(fr.type==='menor'){
+            cost += paygCostForCredits(creditsRef + creditsNueva);
+          } else if(fr.type==='reforma'){
+            cost += paygCostForCredits(creditsMenor + creditsNueva);
+          } else if(fr.type==='nueva'){
+            cost += paygCostForCredits(creditsMenor + creditsRef);
+          } // 'total' incluye todo
+          options.push({ name: fr.name, cost: Math.round(cost) });
+        });
+
+        const best = options.reduce((a,b)=> a.cost < b.cost ? a : b);
+        return best;
+      }
+
+      // Calculadora de ahorro
+      function setupAhorroCalculator(){
+        const ids = {
+          volMenor:'#vol-menor', volReforma:'#vol-reforma', volNueva:'#vol-nueva',
+          hMenor:'#h-menor', hReforma:'#h-reforma', hNueva:'#h-nueva',
+          redMenor:'#red-menor', redReforma:'#red-reforma', redNueva:'#red-nueva',
+          rejActual:'#rej-actual', rejPragma:'#rej-pragma',
+          rate:'#rate'
+        };
+        const els = {};
+        Object.keys(ids).forEach(k=> els[k] = $(ids[k]) );
+
+        const kpiEuros = $('#kpi-ahorro-euros');
+        const kpiHoras = $('#kpi-ahorro-horas');
+        const kpiPlan = $('#kpi-plan');
+        const kpiPayback = $('#kpi-payback');
+        const resCoste = $('#res-coste');
+        const resROI = $('#res-roi');
+
+        const valLabels = {
+          redMenor: $('#red-menor-val'),
+          redReforma: $('#red-reforma-val'),
+          redNueva: $('#red-nueva-val'),
+          rejActual: $('#rej-actual-val'),
+          rejPragma: $('#rej-pragma-val'),
+        };
+
+        // Defaults
+        if(els.hMenor) els.hMenor.value = state.defaults.horas.menor;
+        if(els.hReforma) els.hReforma.value = state.defaults.horas.reforma;
+        if(els.hNueva) els.hNueva.value = state.defaults.horas.nueva;
+
+        const advanceToggle = $('#toggle-advance');
+        const advancePanel = $('#advance-panel');
+        if(advanceToggle){
+          advanceToggle.addEventListener('click', ()=>{
+            advancePanel.classList.toggle('hidden');
+          });
+        }
+
+        // Tooltips de calculadora
+        const calcInfo = $('#calc-info-icon');
+        if(calcInfo){
+          const helpHtml = `
+            <div class="text-sm text-slate-700">
+              <div class="font-semibold mb-1">¿Qué es esta calculadora?</div>
+              <p>Una estimación sencilla para ver <strong>cuántas horas</strong> y <strong>cuánto dinero</strong> te ahorras con PRAGMA.</p>
+              <div class="font-semibold mt-3 mb-1">Cómo funciona (para principiantes):</div>
+              <ul class="list-disc list-inside space-y-1">
+                <li>Indica cuántos expedientes tramitas al año.</li>
+                <li>Ajusta (si quieres) tus horas por tipo y tu tarifa/hora.</li>
+                <li>Te mostramos: horas ahorradas, € ahorrados y el <strong>plan más rentable</strong>.</li>
+              </ul>
+              <p class="mt-2">La lógica combina <em>automatización</em> + <em>rechazos evitados</em> gracias al ENA.</p>
+            </div>
+          `;
+          const show = () => showTooltip(calcInfo, helpHtml);
+          calcInfo.addEventListener('mouseenter', show);
+          calcInfo.addEventListener('mouseleave', hideTooltip);
+          calcInfo.addEventListener('click', (e)=>{ if(tooltipEl.classList.contains('hidden')) show(); else hideTooltip(); });
+        }
+        const advInfo = $('#adv-info');
+        if(advInfo){
+          const advHtml = `
+            <div class="text-sm text-slate-700">
+              <div class="font-semibold mb-1">Ajustes avanzados</div>
+              <p>Refina la estimación con tus <strong>horas actuales por tipología</strong>, porcentaje de <strong>rechazo</strong> y tu <strong>tarifa/hora</strong>.</p>
+              <p class="mt-2">Si no los tocas, usamos valores medios realistas.</p>
+            </div>
+          `;
+          const show = () => showTooltip(advInfo, advHtml);
+          advInfo.addEventListener('mouseenter', show);
+          advInfo.addEventListener('mouseleave', hideTooltip);
+          advInfo.addEventListener('click', ()=>{ if(tooltipEl.classList.contains('hidden')) show(); else hideTooltip(); });
+        }
+
+        // Ayuda por campo (orientado a arquitectos)
+        const fieldHelpText = $('#field-help-text');
+        const fieldHelp = {
+          'vol-menor': '<strong>Nº Obras Menores/año:</strong> volumen típico de tramites rápidos (p. ej. assabentat). Impacto PRAGMA: plantillas por municipio y validaciones que reducen tiempos y errores.',
+          'vol-reforma': '<strong>Nº Reformas/año:</strong> expedientes con más anexos. PRAGMA prepara documentación y evita olvidos que causan subsanaciones.',
+          'vol-nueva': '<strong>Nº Obras Nuevas/año:</strong> trámites complejos. El ahorro aquí viene de evitar re-trabajo y tener normativa al día.',
+          'h-menor': '<strong>Horas por expediente (Obra menor):</strong> cuánto tardas hoy sin PRAGMA. Suele bajar hasta un 40–60% con automatización.',
+          'h-reforma': '<strong>Horas por expediente (Reforma):</strong> refleja tu realidad actual. PRAGMA reduce preparación de anexos y validaciones.',
+          'h-nueva': '<strong>Horas por expediente (Obra nueva):</strong> valor base sin PRAGMA; clave para estimar el impacto en trámites largos.',
+          'red-menor': '<strong>Ahorro de tiempo (Obra menor):</strong> porcentaje de horas que PRAGMA te ahorra al automatizar y estandarizar.',
+          'red-reforma': '<strong>Ahorro de tiempo (Reforma):</strong> recorte de tareas manuales y errores por anexos complejos.',
+          'red-nueva': '<strong>Ahorro de tiempo (Obra nueva):</strong> reducción en preparación, checklist y validaciones.',
+          'rate': '<strong>Tarifa/hora (€):</strong> valor de tu hora cualificada para trabajo documental. Nos sirve para calcular el ahorro en €.',
+          'rej-actual': '<strong>Rechazo hoy (%):</strong> expedientes con requerimientos/subsanaciones. Cada rechazo implica horas extra de re-trabajo.',
+          'rej-pragma': '<strong>Rechazo con PRAGMA (%):</strong> lo que esperas una vez activado ENA (vigilancia normativa) y buenas prácticas.',
+        };
+        function attachFieldHelp(inputId){
+          const el = document.getElementById(inputId);
+          if(!el) return;
+          el.addEventListener('focus', ()=> fieldHelpText.innerHTML = fieldHelp[inputId] || '');
+          el.addEventListener('click', ()=> fieldHelpText.innerHTML = fieldHelp[inputId] || '');
+          el.addEventListener('input', ()=> fieldHelpText.innerHTML = fieldHelp[inputId] || '');
+        }
+        Object.keys(fieldHelp).forEach(attachFieldHelp);
+
+        // Range labels
+        function updateRangeLabels(){
+          if(valLabels.redMenor) valLabels.redMenor.textContent = Math.round(parseFloat(els.redMenor.value)*100);
+          if(valLabels.redReforma) valLabels.redReforma.textContent = Math.round(parseFloat(els.redReforma.value)*100);
+          if(valLabels.redNueva) valLabels.redNueva.textContent = Math.round(parseFloat(els.redNueva.value)*100);
+          if(valLabels.rejActual) valLabels.rejActual.textContent = Math.round(parseFloat(els.rejActual.value)*100);
+          if(valLabels.rejPragma) valLabels.rejPragma.textContent = Math.round(parseFloat(els.rejPragma.value)*100);
+        }
+
+        function compute(){
+          const vol = {
+            menor: Math.max(0, parseInt(els.volMenor.value||0,10)),
+            reforma: Math.max(0, parseInt(els.volReforma.value||0,10)),
+            nueva: Math.max(0, parseInt(els.volNueva.value||0,10)),
+          };
+          const horas = {
+            menor: Math.max(0.5, parseFloat(els.hMenor?.value||state.defaults.horas.menor)),
+            reforma: Math.max(0.5, parseFloat(els.hReforma?.value||state.defaults.horas.reforma)),
+            nueva: Math.max(0.5, parseFloat(els.hNueva?.value||state.defaults.horas.nueva)),
+          };
+          const reduccion = {
+            menor: parseFloat(els.redMenor?.value||state.defaults.reduccion.menor),
+            reforma: parseFloat(els.redReforma?.value||state.defaults.reduccion.reforma),
+            nueva: parseFloat(els.redNueva?.value||state.defaults.reduccion.nueva),
+          };
+          const reworkHoras = state.defaults.reworkHoras;
+          const rechazoActual = parseFloat(els.rejActual?.value||state.defaults.rechazoActual);
+          const rechazoPragma = parseFloat(els.rejPragma?.value||state.defaults.rechazoPragma);
+          const rate = Math.max(10, parseFloat(els.rate?.value||state.defaults.tarifaHora));
+
+          // Horas base (sin rechazos)
+          const horasHoyBase = vol.menor*horas.menor + vol.reforma*horas.reforma + vol.nueva*horas.nueva;
+          const horasPragmaBase = vol.menor*horas.menor*(1-reduccion.menor)
+            + vol.reforma*horas.reforma*(1-reduccion.reforma)
+            + vol.nueva*horas.nueva*(1-reduccion.nueva);
+
+          // Re-trabajo por rechazos (horas extra)
+          const expedientes = { menor: vol.menor, reforma: vol.reforma, nueva: vol.nueva };
+          const rechazosHoy = {
+            menor: expedientes.menor * rechazoActual * reworkHoras.menor,
+            reforma: expedientes.reforma * rechazoActual * reworkHoras.reforma,
+            nueva: expedientes.nueva * rechazoActual * reworkHoras.nueva
+          };
+          const rechazosPragma = {
+            menor: expedientes.menor * rechazoPragma * reworkHoras.menor,
+            reforma: expedientes.reforma * rechazoPragma * reworkHoras.reforma,
+            nueva: expedientes.nueva * rechazoPragma * reworkHoras.nueva
+          };
+          const horasRechazoHoy = rechazosHoy.menor + rechazosHoy.reforma + rechazosHoy.nueva;
+          const horasRechazoPragma = rechazosPragma.menor + rechazosPragma.reforma + rechazosPragma.nueva;
+
+          const horasHoy = horasHoyBase + horasRechazoHoy;
+          const horasConPragma = horasPragmaBase + horasRechazoPragma;
+          const horasAhorro = Math.max(0, horasHoy - horasConPragma);
+
+          // Créditos y coste anual PRAGMA óptimo
+          const totalCredits = vol.menor*state.creditCosts.menor
+            + vol.reforma*state.creditCosts.reforma
+            + vol.nueva*state.creditCosts.nueva;
+          const best = bestAnnualCost(totalCredits, vol);
+
+          const ahorroEuros = horasAhorro * rate;
+          const roi = best.cost>0 ? (ahorroEuros - best.cost)/best.cost : 0;
+          const paybackMonths = (ahorroEuros>0) ? Math.max(1, Math.ceil(best.cost / (ahorroEuros/12))) : null;
+
+          // KPI render
+          animateNumber(kpiEuros, Math.round(ahorroEuros), '€');
+          animateNumber(kpiHoras, Math.round(horasAhorro), ' h');
+          kpiPlan.textContent = best.name;
+          kpiPayback.textContent = paybackMonths ? `${paybackMonths} mes${paybackMonths>1?'es':''}` : '—';
+
+          resCoste.textContent = `€${best.cost.toLocaleString('es-ES')}/año`;
+          resROI.textContent = `ROI ${Math.round(roi*100)}% · Ahorro neto: €${Math.round(ahorroEuros - best.cost).toLocaleString('es-ES')}/año`;
+
+          // Charts
+          horasChart(horasHoy, horasConPragma);
+          origenAhorroChart(
+            horasHoyBase - horasPragmaBase, // automatización
+            horasRechazoHoy - horasRechazoPragma // rechazos evitados
+          );
+        }
+
+        function animateNumber(el, val, suffix=''){
+          if(!el) return;
+          const obj = { v: 0 };
+          anime({
+            targets: obj, v: val, round:1, easing:'easeOutExpo', duration: 800,
+            update:()=>{ el.textContent = `${obj.v.toLocaleString('es-ES')}${suffix}`; }
+          });
+        }
+
+        function horasChart(hoy, pragma){
+          const ctx = document.getElementById('horasChart');
+          if(!ctx) return;
+          if(state.charts.horas) state.charts.horas.destroy();
+          state.charts.horas = new Chart(ctx, {
+            type:'bar',
+            data:{
+              labels:['Hoy','Con PRAGMA'],
+              datasets:[{
+                label:'Horas/año',
+                data:[Math.round(hoy), Math.round(pragma)],
+                backgroundColor:['rgba(239,68,68,0.7)','rgba(34,197,94,0.7)']
+              }]
+            },
+            options:{ responsive:true, maintainAspectRatio:false, scales:{ y:{ beginAtZero:true } } }
+          });
+        }
+        function origenAhorroChart(auto, rech){
+          const ctx = document.getElementById('origenAhorroChart');
+          if(!ctx) return;
+          if(state.charts.origen) state.charts.origen.destroy();
+          const a = Math.max(0, Math.round(auto));
+          const r = Math.max(0, Math.round(rech));
+          state.charts.origen = new Chart(ctx, {
+            type:'doughnut',
+            data:{
+              labels:['Automatización','Rechazos evitados'],
+              datasets:[{
+                data:[a, r],
+                backgroundColor:['#c026d3','#22c55e'],
+                borderWidth:0, hoverOffset:8
+              }]
+            },
+            options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom' } }, cutout:'60%' }
+          });
+        }
+
+        // Eventos y valores iniciales
+        ['input','change'].forEach(evt=>{
+          Object.values(els).forEach(el=>{
+            if(el) el.addEventListener(evt, ()=>{
+              updateRangeLabels();
+              compute();
+            });
+          });
+        });
+        updateRangeLabels();
+        compute();
+
+        // Capturar "Usar en la calculadora" desde Casos
+        document.querySelectorAll('.preset-btn').forEach(btn=>{
+          btn.addEventListener('click', (ev)=>{
+            ev.stopPropagation();
+            try{
+              const vol = JSON.parse(btn.getAttribute('data-vol'));
+              const rate = parseFloat(btn.getAttribute('data-rate'));
+              $('#vol-menor').value = vol.menor;
+              $('#vol-reforma').value = vol.reforma;
+              $('#vol-nueva').value = vol.nueva;
+              $('#rate').value = rate;
+              setActiveSection('ahorro');
+              compute();
+              anime({ targets:'#ahorro-kpis > div', opacity:[0,1], translateY:[10,0], delay: anime.stagger(60) });
+            }catch(e){}
+          });
+        });
+      }
+
+      // Demo guiada (tour en modal)
+      function startGuidedDemo(){
+        const steps = state.demo.steps;
+        let idx = 0;
+        function render(){
+          const s = steps[idx];
+          const progress = `<div class="text-xs text-slate-500">Paso ${idx+1} de ${steps.length}</div>`;
+          modal.open(s.title, `<p>${s.desc}</p>`, progress, true);
+          if(modal.btnPrev && modal.btnNext){
+            modal.btnPrev.disabled = (idx===0);
+            modal.btnPrev.classList.toggle('opacity-50', idx===0);
+            modal.btnNext.textContent = idx===steps.length-1 ? 'Finalizar' : 'Siguiente';
+            modal.actionsBar.classList.remove('hidden');
+          }
+        }
+        if(modal.btnPrev && modal.btnNext){
+          modal.btnPrev.onclick = ()=>{ if(idx>0){ idx--; render(); } };
+          modal.btnNext.onclick = ()=>{
+            if(idx<steps.length-1){ idx++; render(); } else { modal.actionsBar.classList.add('hidden'); modal.close(); }
+          };
+        }
+        render();
+      }
+
+      // Inicializadores
+      registerInitializer('inicio', () => {
+        // Micro-animación de tarjetas
+        anime({ targets: '#inicio .card', opacity:[0,1], translateY:[20,0], delay: anime.stagger(100,{start:300}), duration:700, easing:'easeOutCubic' });
+        const openDemo = document.getElementById('open-demo-btn');
+        if(openDemo){
+          openDemo.addEventListener('click', (e)=>{
+            // Ir a cómo funciona y abrir la demo
+            setActiveSection('como-funciona');
+            setTimeout(()=> startGuidedDemo(), 200);
+          });
+        }
+      });
+      registerInitializer('como-funciona', () => {
+        // Destacar pasos cíclicamente
+        const steps = document.querySelectorAll('.workflow-step');
+        let current = -1;
+        const id = setInterval(()=>{
+          const container = document.getElementById('workflow-visual'); if(!container){ clearInterval(id); return; }
+          current = (current + 1) % steps.length;
+          steps.forEach((st,i)=>{
+            const iconDiv = st.querySelector('div');
+            iconDiv.classList.toggle('bg-fuchsia-200', i===current);
+            iconDiv.classList.toggle('border-fuchsia-500', i===current);
+            iconDiv.classList.toggle('bg-slate-100', i!==current);
+            iconDiv.classList.toggle('border-transparent', i!==current);
+            anime({ targets: iconDiv, scale: i===current ? [1,1.1,1] : 1, duration: 500 });
+          });
+        }, 1800);
+
+        const btn = document.getElementById('start-demo-btn');
+        if(btn){ btn.addEventListener('click', startGuidedDemo); }
+      });
+      registerInitializer('ahorro', () => setupAhorroCalculator());
+      registerInitializer('precios', () => {
+        // Tabs
+        const tabs = document.querySelectorAll('#pricing-tabs .tab-button');
+        const tabContents = document.querySelectorAll('.tab-content');
+        tabs.forEach(tab=>{
+          tab.addEventListener('click', ()=>{
+            const target = tab.dataset.tab;
+            tabs.forEach(t=>{
+              const active = (t.dataset.tab===target);
+              t.classList.toggle('text-fuchsia-600', active);
+              t.classList.toggle('border-fuchsia-500', active);
+              t.classList.toggle('text-gray-500', !active);
+              t.classList.toggle('border-transparent', !active);
+            });
+            tabContents.forEach(c=> c.classList.toggle('hidden', !c.id.includes(target)) );
+          });
+        });
+
+        // Acordeón de ventas (abrir/cerrar al hacer click en la tarjeta)
+        document.querySelectorAll('.sales-card').forEach(card=>{
+          card.addEventListener('click', ()=>{
+            card.classList.toggle('open');
+          });
+        });
+      });
+      registerInitializer('casos', () => {});
+      registerInitializer('roadmap', () => {
+        anime({ targets: '.timeline-icon', scale:[0,1], delay: anime.stagger(100,{start:300}), easing:'easeOutElastic(1,.8)' });
+      });
+      registerInitializer('integraciones', () => {});
+      registerInitializer('faq', () => {
+        document.querySelectorAll('#faq-accordion .faq-card > div:first-child').forEach(header=>{
+          header.addEventListener('click', ()=> header.parentElement.classList.toggle('open'));
+        });
+      });
+      registerInitializer('contacto', () => {});
+
+      // Montaje
+      fillSections();
+
+      // Navegación
+      sidebarLinks.forEach(link=>{
+        link.addEventListener('click',(e)=>{
+          e.preventDefault();
+          const id = link.dataset.section;
+          setActiveSection(id);
+          window.history.pushState(null,'',`#${id}`);
+        });
+      });
+
+      // Inicial
+      const initialSection = window.location.hash.substring(1) || 'inicio';
+      setActiveSection(initialSection);
+
+      // Interacciones globales: modal por data-open-modal
+      document.body.addEventListener('click', (e)=>{
+        const trigger = e.target.closest('[data-open-modal]');
+        if(trigger && modal){
+          try{
+            const payload = JSON.parse(trigger.getAttribute('data-open-modal'));
+            modal.open(payload.title || '', payload.desc || '', payload.extra || '');
+          }catch(err){}
+        }
+      });
+
+      // Hacer "realmente interactivos" los elementos que parecen clicables (tarjetas hover)
+      document.body.addEventListener('click', (e)=>{
+        const isPresetBtn = e.target.closest('.preset-btn');
+        if(isPresetBtn){ return; }
+        const card = e.target.closest('.card-hover');
+        if(card && !card.hasAttribute('data-open-modal')){
+          const title = card.querySelector('h3, h4, .font-bold')?.textContent?.trim() || 'Detalle';
+          const desc = card.querySelector('p')?.textContent?.trim() || 'Más información disponible bajo demanda.';
+          modal.open(title, `<p>${desc}</p>`);
+        }
+      });
+
+      // Ocultar tooltip al hacer scroll o redimensionar
+      window.addEventListener('scroll', hideTooltip, { passive:true });
+      window.addEventListener('resize', hideTooltip);
+    });
+  </script>
+</body>
+</html>
